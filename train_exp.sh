@@ -2,7 +2,7 @@
 cd /root/autodl-tmp/verl && source verl_env/bin/activate
 export WANDB_MODE=offline
 export HF_ENDPOINT=https://hf-mirror.com
-export WANDB_API_KEY="861875e049be6eaedbe62cdf68ebdba83c400974"
+export WANDB_API_KEY="86*"
 
 nohup python3 -m verl.trainer.main_ppo \
  data.train_files=$HOME/data/gsm8k/train.parquet \
