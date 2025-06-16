@@ -5,9 +5,21 @@ USE_SGLANG=${USE_SGLANG:-1}
 
 export MAX_JOBS=32
 
-echo "=== verl手动安装脚本 ==="
+# 设置错误处理
+set -e  # 遇到错误立即退出
+set -x  # 显示执行的命令
+
+echo "=== verl手动安装脚本 v2.0 ==="
 echo "USE_MEGATRON: $USE_MEGATRON"
 echo "USE_SGLANG: $USE_SGLANG"
+echo "Python版本: $(python --version)"
+
+# 检查Python版本
+PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+echo "当前Python版本: $PYTHON_VERSION"
+if [[ "$PYTHON_VERSION" > "3.11" ]]; then
+    echo "⚠️  警告: Python 3.12+ 可能与某些包不兼容，建议使用Python 3.10或3.11"
+fi
 
 echo "1. install inference frameworks and pytorch they need"
 if [ $USE_SGLANG -eq 1 ]; then
@@ -20,12 +32,40 @@ pip install --no-cache-dir "vllm==0.8.5.post1" "torch==2.6.0" "torchvision==0.21
 
 echo "2. install basic packages"
 echo "安装基础Python包..."
-pip install "transformers[hf_xet]>=4.51.0" accelerate datasets peft hf-transfer \
-    "numpy<2.0.0" "pyarrow>=15.0.0" pandas \
-    ray[default] codetiming hydra-core pylatexenc qwen-vl-utils wandb dill pybind11 liger-kernel mathruler \
-    pytest py-spy pyext pre-commit ruff
 
-pip install "nvidia-ml-py>=12.560.30" "fastapi[standard]>=0.115.0" "optree>=0.13.0" "pydantic>=2.9" "grpcio>=1.62.1"
+# 首先安装核心依赖，避免版本冲突
+echo "2.1 安装核心框架..."
+pip install --no-cache-dir "numpy<2.0.0" "pyarrow>=15.0.0" pandas
+
+echo "2.2 安装机器学习框架..."
+pip install --no-cache-dir "transformers[hf_xet]>=4.51.0" accelerate datasets peft hf-transfer
+
+echo "2.3 安装分布式和配置管理..."
+pip install --no-cache-dir ray[default] hydra-core omegaconf
+
+echo "2.4 安装工具和监控..."
+pip install --no-cache-dir codetiming wandb dill tensordict
+
+echo "2.5 安装开发工具..."
+pip install --no-cache-dir pybind11 liger-kernel mathruler pytest py-spy pre-commit ruff
+
+echo "2.6 安装其他依赖..."
+pip install --no-cache-dir pylatexenc qwen-vl-utils
+
+echo "2.7 安装系统级依赖..."
+pip install --no-cache-dir "nvidia-ml-py>=12.560.30" "fastapi[standard]>=0.115.0" "optree>=0.13.0" "pydantic>=2.9" "grpcio>=1.62.1"
+
+echo "2.8 验证关键包安装..."
+python -c "
+try:
+    import transformers, accelerate, datasets, peft
+    import ray, hydra, codetiming, wandb
+    import numpy, pandas, torch
+    print('✅ 所有关键包都已安装')
+except ImportError as e:
+    print(f'❌ 包导入失败: {e}')
+    exit(1)
+"
 
 echo "3. install FlashAttention and FlashInfer (手动模式)"
 echo "注意：请确保您已经手动下载了以下wheel文件到当前目录："
